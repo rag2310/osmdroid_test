@@ -6,7 +6,8 @@ import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.graphics.Color
+import android.location.Location
+import android.location.LocationListener
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -24,13 +25,11 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
-import org.osmdroid.tileprovider.MapTileProviderBasic
-import org.osmdroid.tileprovider.tilesource.*
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
-import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
@@ -38,7 +37,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), LocationListener {
     private lateinit var mapView: MapView
     private var permissionDenied = false
     private lateinit var mLocationOverlay: MyLocationNewOverlay
@@ -48,6 +47,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rotationGestureOverlay: RotationGestureOverlay
     private lateinit var listMarker: List<Marker>
     private var markedMap: Boolean = false
+    private var gpsSpeed = 0f
+    private var gpsBearing = 0f
+    private var lat = 0f
+    private var lon = 0f
+    private var alt = 0f
+    private var timeOfFix: Long = 0
+    var deviceOrientation = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -250,7 +256,8 @@ class MainActivity : AppCompatActivity() {
         withContext(Dispatchers.IO) {
             val roadManager: RoadManager = OSRMRoadManager(context, userAgentValue)
             val road: Road = roadManager.getRoad(wayPoints)
-            val roadOverlay: Polyline = RoadManager.buildRoadOverlay(road, 0x800000FF.toInt(),20.0f)
+            val roadOverlay: Polyline =
+                RoadManager.buildRoadOverlay(road, 0x800000FF.toInt(), 20.0f)
             mapView.overlays.add(roadOverlay)
             mapView.invalidate()
         }
@@ -299,6 +306,27 @@ class MainActivity : AppCompatActivity() {
          */
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
         private const val ZOOM: Double = 21.0
+    }
+
+    override fun onLocationChanged(location: Location) {
+
+        gpsBearing = location.bearing
+        gpsSpeed = location.speed
+        lat = location.latitude.toFloat()
+        lon = location.longitude.toFloat()
+        alt = location.altitude.toFloat()
+        timeOfFix = location.time
+
+        var t: Float = (360 - gpsBearing - this.deviceOrientation)
+        if (t < 0){
+            t += 360;
+        }
+        if(t > 360){
+            t -= 360
+        }
+
+        t = t
+
     }
 
 }
